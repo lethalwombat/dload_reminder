@@ -58,6 +58,7 @@ def read_dloads(imap_host, imap_user, imap_pass, email_buffer, folder, from_addr
             # if searching all emails
             parsed_email = parse_email(email_message['from']).lower()
             if from_addr == 'all':
+                print('Found this: {}'.format(email_message['subject']))
                 if parsed_email not in _results:
                     _results[parsed_email] = 0
                 _results[parsed_email] += 1
@@ -65,12 +66,13 @@ def read_dloads(imap_host, imap_user, imap_pass, email_buffer, folder, from_addr
             # if searching for a specific address
             else:
                 if parsed_email == from_addr:
+                    print('Found this: {}'.format(email_message['subject']))
                     if parsed_email not in _results:
                         _results[parsed_email] = 0
                     _results[parsed_email] += 1
 
-    # if purge == 'yes':
-    #     conn.store(m, "+FLAGS", "\\Deleted")
+            if purge == 'yes':
+                conn.store(str(i), "+FLAGS", "\\Deleted")
             
     if conn.state == 'SELECTED':
         conn.expunge()
@@ -87,7 +89,7 @@ def main():
     dload_list = read_dloads(imap_host, imap_user, imap_pass, email_buffer, folder, from_addr, purge)
 
     # output results into a .csv file
-    with open('result_csv', 'w') as f:
+    with open('result.csv', 'w') as f:
         for k, v in dload_list.items():
             f.write('{},{}\n'.format(k, v))  
 
