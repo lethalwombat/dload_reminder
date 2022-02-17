@@ -1,30 +1,27 @@
-import configparser
+#! /usr/bin/python3
 
+import configparser
 from imaplib import IMAP4_SSL
 import email
-from email.header import decode_header
-from select import select
-
 import os
 
 
 # get parameters from the config file
 configfile = configparser.ConfigParser()
-configfile.read('config.cfg')
+configfile.read(os.path.join(os.getcwd(), 'config.cfg'))
 
 # assing parameters to strings from configfile
-print(configfile.sections())
+imap_host = configfile['connection']['host']
+imap_user = configfile['connection']['user']
+imap_pass = configfile['connection']['password']
 
+folder = configfile['email']['folder']
+subj = configfile['email']['subject']
+purge = configfile['email']['purge']
 
-# temporary parameters
-# imap_host = 'imap.outlook.com'
-# imap_user = 'korean_6_golf_golf@outlook.com'
-# imap_pass = 'nV9,sRdhE[VPV,uKc'
-# folder = 'inbox'
-# subj = 'dload'
-# purge = 0
+outfile = configfile['output']['outfile']
 
-def read_dloads(imap_host, imap_user, imap_pass, folder, subj: str, purge: int) -> list:
+def read_dloads(imap_host, imap_user, imap_pass, folder, subj, purge: str) -> list:
 
     _results = []
 
@@ -55,7 +52,7 @@ def read_dloads(imap_host, imap_user, imap_pass, folder, subj: str, purge: int) 
                 _results.append(_one_result)
 
 
-    if purge == 1:
+    if purge == 'yes':
         conn.store(m, "+FLAGS", "\\Deleted")
             
     if conn.state == 'SELECTED':
@@ -63,13 +60,43 @@ def read_dloads(imap_host, imap_user, imap_pass, folder, subj: str, purge: int) 
         conn.close()
     conn.logout()
 
-    print(_results)
-
     return _results
 
+def dloads_to_file(dload_list: list, outfile: str) -> None:
+
+    if len(dload_list) == 0:
+        print('Nothing to add')
+        return None
+
+    else:
+        # check what is already on the list 
+        try:
+            with open(outfile, 'r', encoding='utf-8') as r:
+                on_the_list = [n.strip('\n') for n in r.readlines()]
+        except FileNotFoundError:
+            with open(outfile, 'w', encoding='utf-8') as r:
+                on_the_list = []
+            
+        # add new entries to the list
+        with open(outfile, 'a', encoding='utf-8') as f:        
+            for e in dload_list:
+                e_items = e['body'].strip('\n').split('\n')
+                for e_item in e_items:
+                    _ = e_item.strip('\r').lower()
+                    if _ not in on_the_list:
+                        on_the_list.append(_)
+                        f.write('{}\n'.format(_))
+        
+        return None
+        
+
 def main():
-    # dload_list = read_dloads()
-    print('main function')
+    # read in download reminders from email
+    dload_list = read_dloads(imap_host, imap_user, imap_pass, folder, subj, purge)
+    
+    # write results to the outputfile
+    dloads_to_file(dload_list, outfile)
+
 
 if __name__ == '__main__':
     main()
