@@ -50,10 +50,9 @@ def read_dloads(imap_host, imap_user, imap_pass, folder, subj, purge: str) -> li
                         _one_result['body'] = part.get_payload(decode=True).decode()
 
                 _results.append(_one_result)
-
-
-    if purge == 'yes':
-        conn.store(m, "+FLAGS", "\\Deleted")
+            
+            if purge == 'yes':
+                conn.store(m, "+FLAGS", "\\Deleted")
             
     if conn.state == 'SELECTED':
         conn.expunge()
